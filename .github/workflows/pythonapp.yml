@@ -1,7 +1,27 @@
 name: Python application
+run-name: "Python application ${{ inputs.leg || github.event_name }} ${{ inputs.racecar_run }}"
 
-on: [push, workflow_dispatch]
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      leg:
+        description: "baseline (uninstrumented) or instrumented (under chalk/curiosity)"
+        type: choice
+        options: [instrumented, baseline]
+        default: baseline
+      profile:
+        description: "CrashOverride chalk profile"
+        type: string
+        default: curiosity-tests-racecar
+      racecar_run:
+        description: "racecar correlation token, echoed into the run name"
+        type: string
+        default: ""
 
+
+env:
+  CHALK_ON: ${{ inputs.leg == 'instrumented' }}
 jobs:
   python_build:
 
@@ -31,6 +51,7 @@ jobs:
         pytest --capture=tee-sys
 
   windows_executable:
+    if: false   # racecar: non-Linux runner, not measured here
 
     runs-on: windows-latest
 
@@ -77,7 +98,7 @@ jobs:
 
   tag_successful_canonical_master:
 
-    needs: [python_build, windows_executable]
+    needs: [python_build]
     if: ${{ always() && needs.python_build.result == 'success' && needs.windows_executable.result == 'success' && github.repository == 'bash0/cewe2pdf' && github.ref == 'refs/heads/master' }}
     runs-on: ubuntu-latest
     permissions:
